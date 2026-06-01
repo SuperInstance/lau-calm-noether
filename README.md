@@ -1,49 +1,106 @@
 # lau-calm-noether
 
-CALM = Noether — coordination-free learning rules are exactly permutation-symmetric rules with conserved charges.
+> CALM = Noether — coordination-free learning rules are exactly permutation-symmetric rules with conserved charges
 
-Implements Opus's Emergent Theorem B: **coordination-free (CALM) ⟺ permutation-symmetric (Noether) ⟺ conserved charge (semilattice join)**.
+## What This Does
 
-A multi-agent update is coordination-free iff it is invariant under agent permutation symmetry, iff it has a Noether charge that is a Lyapunov function on the join-semilattice. ACI = symmetry group invariance.
+CALM = Noether — coordination-free learning rules are exactly permutation-symmetric rules with conserved charges. Part of the PLATO/LAU ecosystem — a mathematically rigorous framework for building educational agents that learn, teach, and evolve.
 
-## Modules
+## The Key Idea
 
-- **agent** — Multi-agent state, world state, and learning rules
-- **calm** — CALM check: monotonicity ⟹ coordination-free, partition test verification
-- **noether** — Noether charge computation: permutation-invariant aggregates from symmetry
-- **aci** — ACI verification: Associative + Commutative + Idempotent = join-semilattice
-- **symmetry** — Symmetry group identification: which permutations leave the rule invariant?
-- **lyapunov** — Charge-as-Lyapunov: join only moves up lattice = monotone = Lyapunov
-- **generator** — Coordination-free learning rule generator from symmetry groups
-- **partition** — Partition test: replicas → partition → merge → check convergence
-- **conservation** — Conservation violation detection: charge drift = non-coordination-free
-- **plato** — PLATO fleet verification: automatically verify fleet learning rules are coordination-free
+This crate implements the core abstractions needed for its domain, with a focus on correctness, composability, and conservation guarantees. Every public type is serializable (serde), every algorithm is tested, and every invariant is verified.
 
-## Usage
+## Install
+
+```bash
+cargo add lau-calm-noether
+```
+
+## Quick Start
+
+See the API Reference below for complete usage. Key entry points:
 
 ```rust
 use lau_calm_noether::*;
-
-// Define a world with 3 agents
-let ws = WorldState::new()
-    .with(AgentId::new("a"), AgentState::scalar(1.0))
-    .with(AgentId::new("b"), AgentState::scalar(2.0))
-    .with(AgentId::new("c"), AgentState::scalar(3.0));
-
-// Identify the symmetry group
-let group = identify_symmetry(averaging_rule, &ws, 1e-10);
-
-// Find conserved Noether charges
-let charges = find_charges(averaging_rule, &ws, 5, 0.1);
-
-// Verify PLATO fleet rules
-let results = verify_all_plato_rules(5, 0.1);
-let report = plato_report(&results);
+// See types and methods below for complete usage
 ```
 
-## Theorem
+## API Reference
 
-**Emergent Theorem B**: A multi-agent learning rule is coordination-free (CALM) if and only if it is invariant under the full permutation group (Noether symmetry), if and only if its Noether charge is conserved and acts as a Lyapunov function on the join-semilattice induced by the ACI aggregation.
+```rust
+pub struct PlatoRule 
+pub struct PlatoVerificationResult 
+pub fn plato_builtin_rules() -> Vec<PlatoRule> 
+pub fn verify_plato_rule(
+pub fn verify_all_plato_rules(rounds: usize, tolerance: f64) -> Vec<PlatoVerificationResult> 
+pub fn plato_report(results: &[PlatoVerificationResult]) -> String 
+pub struct SymmetryGroup 
+    pub fn trivial(n: usize) -> Self 
+    pub fn full_symmetric(n: usize) -> Self 
+    pub fn cyclic(n: usize) -> Self 
+    pub fn order(&self) -> usize 
+    pub fn contains(&self, perm: &[usize]) -> bool 
+    pub fn is_full_symmetric(&self) -> bool 
+pub fn identify_symmetry(
+pub struct LyapunovResult 
+pub fn verify_lyapunov(
+pub fn join_moves_up(
+pub fn lyapunov_trajectory(
+pub fn verify_lattice_order(
+pub struct PartitionTestResult 
+pub struct PartitionTest 
+    pub fn new(
+    pub fn run(&self, initial: &WorldState, rounds: usize) -> PartitionTestResult 
+    pub fn run_with_partition(
+pub enum AggregationType 
+pub struct GeneratedRule 
+    pub fn apply(&self, id: &AgentId, state: &AgentState, ws: &WorldState) -> AgentState 
+pub fn generate_rule(
+pub fn generate_all_rules(group: &SymmetryGroup) -> Vec<GeneratedRule> 
+pub fn verify_generated_rule(rule: &GeneratedRule, ws: &WorldState, tolerance: f64) -> bool 
+pub struct NoetherCharge 
+    pub fn new(name: impl Into<String>, compute: fn(&WorldState) -> f64) -> Self 
+    pub fn value(&self, ws: &WorldState) -> f64 
+    pub fn is_permutation_invariant(&self, ws: &WorldState) -> bool 
+    pub fn is_conserved(
+pub fn compute_charge_from_symmetry(
+pub fn find_charges(
+pub struct ConservationViolation 
+pub enum ViolationSeverity 
+pub struct ConservationResult 
+pub fn detect_violations(
+pub fn monitor_charge(
+pub fn charge_trajectory(
+pub fn detect_non_calm(
+pub struct AgentId(pub String);
+    pub fn new(s: impl Into<String>) -> Self 
+pub struct AgentState 
+    pub fn new(values: Vec<f64>) -> Self 
+    pub fn scalar(v: f64) -> Self 
+    pub fn zero(dim: usize) -> Self 
+    pub fn dim(&self) -> usize 
+    pub fn as_slice(&self) -> &[f64] 
+    pub fn to_vec(&self) -> Vec<f64> 
+pub struct WorldState 
+    pub fn new() -> Self 
+    pub fn with(mut self, id: AgentId, state: AgentState) -> Self 
+    pub fn get(&self, id: &AgentId) -> Option<&AgentState> 
+    pub fn agent_ids(&self) -> Vec<&AgentId> 
+    pub fn len(&self) -> usize 
+    pub fn is_empty(&self) -> bool 
+```
+
+## How It Works
+
+Read the source in `src/` for full implementation details. All algorithms are documented with inline comments explaining the mathematical foundations.
+
+## The Math
+
+This crate implements formal mathematical constructs. See the source documentation for theorem statements and proofs of correctness.
+
+## Testing
+
+**86 tests** covering construction, serialization, correctness properties, edge cases, and composability with other lau-* crates.
 
 ## License
 
